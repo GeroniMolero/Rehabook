@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "633078325293",
+    "project_id": "rehabook",
+    "storage_bucket": "rehabook.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633078325293:android:5ce8b48e6aa055e25598a4",
+        "android_client_info": {
+          "package_name": "com.example.rehabook"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDe-ymPSVjluXvxVv4HoT8tesjBtVFVOeQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
