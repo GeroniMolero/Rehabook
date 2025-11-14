@@ -19,6 +19,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import android.util.Log
 
 @Composable
 fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navController: NavController) {
@@ -102,9 +103,11 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                         Toast.makeText(context, "DNI inválido", Toast.LENGTH_SHORT).show()
                     }
                     else -> {
+                        Log.d("RehabookRegister", "Iniciando proceso de registro para: $email"
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { authTask ->
                                 if (authTask.isSuccessful) {
+                                    Log.d("RehabookRegister", "Autenticación exitosa. UID: ${auth.currentUser?.uid}") // Log 2
                                     val currentUser = auth.currentUser
                                     currentUser?.let { user ->
                                         val uid = user.uid
@@ -114,23 +117,28 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                             telefono = phone,
                                             dni = dni
                                         )
-
+                                        Log.d("RehabookRegister", "Intentando guardar datos en RTDB para UID: $uid") // Log 3
+                                        Log.d("RehabookRegister", "Datos a guardar: $nuevoUsuario") // Log 4
+                                        
                                         database.child("usuarios").child(uid).setValue(nuevoUsuario)
                                             .addOnSuccessListener {
                                                 Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
+                                                Log.d("RehabookRegister", "Datos de usuario guardados exitosamente en RTDB.") // Log 5
                                                 navController.navigate(Screen.Home.route) {
                                                     popUpTo(Screen.Register.route) { inclusive = true }
                                                 }
                                             }
                                             .addOnFailureListener { dbError ->
                                                 Toast.makeText(context, "Error guardando datos del usuario: ${dbError.message}", Toast.LENGTH_LONG).show()
+                                                Log.e("RehabookRegister", "ERROR al guardar datos en RTDB: ${dbError.message}", dbError) // Log 6
                                                 auth.currentUser?.delete()
                                             }
                                     } ?: run {
+                                        Log.e("RehabookRegister", "ERROR: currentUser es nulo DESPUÉS de autenticación exitosa.") // Log 7
                                         Toast.makeText(context, "Usuario autenticado nulo después del registro", Toast.LENGTH_SHORT).show()
                                     }
                                 } else {
-                                    // El registro de Authentication falló
+                                    Log.e("RehabookRegister", "ERROR en autenticación: ${authTask.exception?.message}", authTask.exception) // Log 8
                                     Toast.makeText(context, "Error al registrarse: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
