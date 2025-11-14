@@ -14,6 +14,6 @@ object SessionManager {
 
     fun getKeepLoggedIn(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getBoolean(KEY_KEEP_LOGGED_IN, true) // default: mantener sesión
+        return prefs.getBoolean(KEY_KEEP_LOGGED_IN, false)
     }
 }
