@@ -46,7 +46,10 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
             value = phone,
             onValueChange = { phone = it },
             label = { Text("Teléfono") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Phone
+            )
         )
 
         TextField(
@@ -83,8 +86,11 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                     password.length < 6 -> {
                         Toast.makeText(context, "Contraseña mínima 6 caracteres", Toast.LENGTH_SHORT).show()
                     }
+                    phone.length != 9 -> {
+                        Toast.makeText(context, "El telefono debe tener 9 digitos",Toast.LENGTH_SHORT).show()
+                    }
                     else -> {
-                        // Crear usuario en Firebase Auth
+
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
