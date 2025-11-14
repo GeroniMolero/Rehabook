@@ -1,4 +1,4 @@
-package com.example.rehabook.ui.pantallas
+package com.example.rehabook.auth.pantallas
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.rehabook.Screen
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.Alignment
 
 @Composable
 fun HomeScreen(auth: FirebaseAuth, navController: NavController) {
@@ -17,11 +18,15 @@ fun HomeScreen(auth: FirebaseAuth, navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Bienvenido, ${user?.email ?: "Usuario"}", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Bienvenido, ${user?.email ?: "Usuario"}",
+            style = MaterialTheme.typography.titleMedium
+        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp)) // un poco más de espacio para centrar
 
         Button(
             onClick = {
@@ -36,3 +41,4 @@ fun HomeScreen(auth: FirebaseAuth, navController: NavController) {
         }
     }
 }
+

@@ -35,8 +35,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicializar Firebase
-        FirebaseApp.initializeApp(this)
         auth = Firebase.auth
         database = Firebase.database.reference
 
@@ -49,39 +47,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    RehabookTheme {
-        Greeting("Android")
-    }
-}
-
-
-@Composable
-fun pantallaInicio(modifier: Modifier = Modifier){
-    Image(
-        painter = painterResource(id = R.drawable.pajaroestesi),
-        contentDescription = "logo pajarito",
-        modifier = Modifier,
-        alignment= Alignment.Center,
-        contentScale = ContentScale.Fit,
-    )
-}
-
-@Preview
-@Composable
-fun pantallaInicioPreview(){
-    pantallaInicio()
 }

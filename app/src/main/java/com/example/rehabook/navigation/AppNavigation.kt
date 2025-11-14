@@ -1,14 +1,13 @@
 package com.example.rehabook.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rehabook.Screen
-import com.example.rehabook.ui.pantallas.HomeScreen
-import com.example.rehabook.ui.pantallas.LoginScreen
-import com.example.rehabook.ui.pantallas.RegisterScreen
+import com.example.rehabook.auth.pantallas.HomeScreen
+import com.example.rehabook.auth.pantallas.LoginScreen
+import com.example.rehabook.auth.pantallas.RegisterScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 
@@ -31,3 +30,4 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
         }
     }
 }
+
