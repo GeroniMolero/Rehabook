@@ -103,7 +103,7 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                         Toast.makeText(context, "DNI inválido", Toast.LENGTH_SHORT).show()
                     }
                     else -> {
-                        Log.d("RehabookRegister", "Iniciando proceso de registro para: $email"
+                        Log.d("RehabookRegister", "Iniciando proceso de registro para: $email")
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { authTask ->
                                 if (authTask.isSuccessful) {
