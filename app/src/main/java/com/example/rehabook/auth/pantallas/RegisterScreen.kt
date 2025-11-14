@@ -109,9 +109,10 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                     val userMap = mapOf(
                                         "nombre" to name,
                                         "telefono" to phone,
-                                        "email" to email
+                                        "email" to email,
+                                        "dni" to dni
                                     )
-                                    database.child("users").child(uid).setValue(userMap)
+                                    database.child("usuario").child(uid).setValue(userMap)
                                         .addOnSuccessListener {
                                             navController.navigate(Screen.Home.route) {
                                                 popUpTo(Screen.Register.route) { inclusive = true }
