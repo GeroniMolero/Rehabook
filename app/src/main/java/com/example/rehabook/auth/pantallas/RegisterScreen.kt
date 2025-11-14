@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.rehabook.Screen
+import com.example.rehabook.models.usuario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -101,31 +102,39 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                         Toast.makeText(context, "DNI inválido", Toast.LENGTH_SHORT).show()
                     }
                     else -> {
-
                         auth.createUserWithEmailAndPassword(email, password)
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    val uid = auth.currentUser!!.uid
-                                    val userMap = mapOf(
-                                        "nombre" to name,
-                                        "telefono" to phone,
-                                        "email" to email,
-                                        "dni" to dni
-                                    )
-                                    database.child("usuario").child(uid).setValue(userMap)
-                                        .addOnSuccessListener {
-                                            navController.navigate(Screen.Home.route) {
-                                                popUpTo(Screen.Register.route) { inclusive = true }
+                            .addOnCompleteListener { authTask ->
+                                if (authTask.isSuccessful) {
+                                    val currentUser = auth.currentUser
+                                    currentUser?.let { user ->
+                                        val uid = user.uid
+                                        val nuevoUsuario = usuario(
+                                            nombre = name,
+                                            email = email,
+                                            telefono = phone,
+                                            dni = dni
+                                        )
+
+                                        database.child("usuarios").child(uid).setValue(nuevoUsuario)
+                                            .addOnSuccessListener {
+                                                Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
+                                                navController.navigate(Screen.Home.route) {
+                                                    popUpTo(Screen.Register.route) { inclusive = true }
+                                                }
                                             }
-                                        }
-                                        .addOnFailureListener { e ->
-                                            Toast.makeText(context, "Error guardando usuario: ${e.message}", Toast.LENGTH_SHORT).show()
-                                        }
+                                            .addOnFailureListener { dbError ->
+                                                Toast.makeText(context, "Error guardando datos del usuario: ${dbError.message}", Toast.LENGTH_LONG).show()
+                                                auth.currentUser?.delete()
+                                            }
+                                    } ?: run {
+                                        Toast.makeText(context, "Usuario autenticado nulo después del registro", Toast.LENGTH_SHORT).show()
+                                    }
                                 } else {
-                                    Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                                    // El registro de Authentication falló
+                                    Toast.makeText(context, "Error al registrarse: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
-                        navController.navigate(Screen.Login.route)
+                        // --- FIN DE CORRECCIONES ---
                     }
                 }
             },
