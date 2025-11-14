@@ -107,6 +107,7 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                     Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                                 }
                             }
+                        navController.navigate(Screen.Login.route)
                     }
                 }
             },

@@ -1,5 +1,6 @@
 package com.example.rehabook
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,19 +32,24 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var database: DatabaseReference
+    private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         auth = Firebase.auth
         database = Firebase.database.reference
+        prefs = getSharedPreferences("user_prefs", MODE_PRIVATE)
 
-        enableEdgeToEdge()
+        // Si no queremos mantener sesión, cerrar al iniciar
+        val keepLoggedIn = prefs.getBoolean("keepLoggedIn", true)
+        if (!keepLoggedIn) {
+            auth.signOut()
+        }
 
         setContent {
             RehabookTheme {
-                // Navegación centralizada
-                AppNavigation(auth, database)
+                AppNavigation(auth, database, prefs)
             }
         }
     }
