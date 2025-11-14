@@ -15,8 +15,9 @@ import com.google.firebase.database.DatabaseReference
 fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
     val navController = rememberNavController()
 
-    // Determinar pantalla inicial según autenticación
-    val startDestination = if (auth.currentUser != null) Screen.Home.route else Screen.Login.route
+    val startDestination =
+        if (auth.currentUser != null) Screen.Home.route
+        else Screen.Login.route
 
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.Login.route) {
@@ -30,4 +31,5 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
         }
     }
 }
+
 

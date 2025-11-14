@@ -21,6 +21,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.google.firebase.auth.auth
+import com.example.rehabook.utils.SessionManager
 
 sealed class Screen(val route: String){
     object Login: Screen("login")
@@ -32,24 +33,21 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var auth: FirebaseAuth
     private lateinit var database: DatabaseReference
-    private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         auth = Firebase.auth
         database = Firebase.database.reference
-        prefs = getSharedPreferences("user_prefs", MODE_PRIVATE)
 
-        // Si no queremos mantener sesión, cerrar al iniciar
-        val keepLoggedIn = prefs.getBoolean("keepLoggedIn", true)
-        if (!keepLoggedIn) {
+        // Si el usuario NO desea mantener la sesión → cerrar al abrir la app
+        if (!SessionManager.getKeepLoggedIn(this)) {
             auth.signOut()
         }
 
         setContent {
             RehabookTheme {
-                AppNavigation(auth, database, prefs)
+                AppNavigation(auth, database)
             }
         }
     }
