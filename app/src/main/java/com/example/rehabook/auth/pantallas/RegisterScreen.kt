@@ -28,6 +28,7 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
     var phone by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var dni by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -39,6 +40,13 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
             value = name,
             onValueChange = { name = it },
             label = { Text("Nombre") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        TextField(
+            value = dni,
+            onValueChange = { dni = it },
+            label = { Text("DNI") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -77,7 +85,7 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
             onClick = {
                 // Validaciones
                 when {
-                    name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() -> {
+                    name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || dni.isEmpty() -> {
                         Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
                     }
                     !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
@@ -88,6 +96,9 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                     }
                     phone.length != 9 -> {
                         Toast.makeText(context, "El telefono debe tener 9 digitos",Toast.LENGTH_SHORT).show()
+                    }
+                    !validarDni(dni) -> {
+                        Toast.makeText(context, "DNI inválido", Toast.LENGTH_SHORT).show()
                     }
                     else -> {
 
@@ -129,4 +140,14 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
             Text("Ya tengo cuenta")
         }
     }
+}
+fun validarDni(dni: String): Boolean {
+    val dniRegex = Regex("""^\d{8}[A-Za-z]$""")
+    if (!dniRegex.matches(dni)) return false
+
+    val letras = "TRWAGMYFPDXBNJZSQVHLCKE"
+    val numero = dni.substring(0, 8).toInt()
+    val letraCorrecta = letras[numero % 23]
+
+    return dni.last().uppercaseChar() == letraCorrecta
 }
