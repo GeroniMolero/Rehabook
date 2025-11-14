@@ -42,6 +42,7 @@ Permite registrar usuarios, iniciar sesión y cerrar sesión, mostrando la infor
 ### Registro
 - Formulario completo:
     - Nombre
+    - DNI
     - Email
     - Teléfono
     - Contraseña
@@ -51,6 +52,7 @@ Permite registrar usuarios, iniciar sesión y cerrar sesión, mostrando la infor
         2.Email válido (usando patrón `Patterns.EMAIL_ADDRESS` de Android).
         3.Contraseña con al menos 6 caracteres.
         4.Teléfono con longitud exacta de 9 caracteres.
+        5.DNI válido (usando método validarDni)
   - Muestra mensajes de error con Toast si alguna validación falla.
   - Al completar correctamente, registra al usuario y redirige al login.
 
