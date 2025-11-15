@@ -21,7 +21,7 @@ Permite registrar usuarios, iniciar sesión y cerrar sesión, mostrando la infor
 3. Descargar google-services.json desde Firebase y colocarlo en la raíz del módulo app/ de tu proyecto.
 > El archivo **no está incluido** en el ZIP entregado.
 
-4.Configurar reglas de Firebase Realtime Database:
+4. Configurar reglas de Firebase Realtime Database:
     - En la consola de Firebase, ve a Realtime Database y luego a la pestaña Reglas .
     - Para desarrollo inicial y pruebas, puedes usar reglas permisivas (¡ no usar en producción! ):
     
@@ -31,7 +31,9 @@ Permite registrar usuarios, iniciar sesión y cerrar sesión, mostrando la infor
         ".write": "true"
       }
     }
+    
     - Para producción, se recomienda una configuración más segura, por ejemplo, permitiendo que cada usuario solo lea y escriba sus propios datos:
+      
     > {
       "rules": {
         "usuarios": {
