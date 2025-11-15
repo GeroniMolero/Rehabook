@@ -133,6 +133,13 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                                 Log.e("RehabookRegister", "ERROR al guardar datos en RTDB: ${dbError.message}", dbError) // Log 6
                                                 auth.currentUser?.delete()
                                             }
+                                            .addOnCompleteListener { task ->
+                                                if (task.isSuccessful) {
+                                                    Log.d("RehabookRegister", "Log 7 (COMPLETER): La tarea setValue se completó con ÉXITO. Datos guardados: $nuevoUsuario")
+                                                } else {
+                                                    Log.e("RehabookRegister", "Log 7 (COMPLETER): La tarea setValue falló. Excepción: ${task.exception?.message}", task.exception)
+                                                }
+                                            }
                                     } ?: run {
                                         Log.e("RehabookRegister", "ERROR: currentUser es nulo DESPUÉS de autenticación exitosa.") // Log 7
                                         Toast.makeText(context, "Usuario autenticado nulo después del registro", Toast.LENGTH_SHORT).show()
