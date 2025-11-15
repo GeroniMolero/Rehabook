@@ -20,6 +20,7 @@ Permite registrar usuarios, iniciar sesión y cerrar sesión, mostrando la infor
 2. Crear un proyecto Android en Firebase.
 3. Descargar google-services.json desde Firebase y colocarlo en la raíz del módulo app/ de tu proyecto.
 > El archivo **no está incluido** en el ZIP entregado.
+
 4.Configurar reglas de Firebase Realtime Database:
     - En la consola de Firebase, ve a Realtime Database y luego a la pestaña Reglas .
     - Para desarrollo inicial y pruebas, puedes usar reglas permisivas (¡ no usar en producción! ):
@@ -74,11 +75,11 @@ Permite registrar usuarios, iniciar sesión y cerrar sesión, mostrando la infor
     - Contraseña
 - Botón “Registrar”
   - Validaciones:
-        1.Todos los campos rellenos.
-        2.Email válido (usando patrón `Patterns.EMAIL_ADDRESS` de Android).
-        3.Contraseña con al menos 6 caracteres.
-        4.Teléfono con longitud exacta de 9 caracteres.
-        5.DNI válido (usando método validarDni)
+        - 1.Todos los campos rellenos.
+        - 2.Email válido (usando patrón `Patterns.EMAIL_ADDRESS` de Android).
+        - 3.Contraseña con al menos 6 caracteres.
+        - 4.Teléfono con longitud exacta de 9 caracteres.
+        - 5.DNI válido (usando método validarDni)
   - Muestra mensajes de error con Toast si alguna validación falla.
   - Al completar correctamente las validaciones, el usuario se registra en Firebase Authentication.
   - Posteriormente, los datos del usuario (nombre, email, teléfono, DNI) se guardan en Firebase Realtime Database bajo una entrada con el UID único del usuario.
