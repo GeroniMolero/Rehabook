@@ -24,6 +24,7 @@ Permite registrar usuarios, iniciar sesión y cerrar sesión, mostrando la infor
 4.Configurar reglas de Firebase Realtime Database:
     - En la consola de Firebase, ve a Realtime Database y luego a la pestaña Reglas .
     - Para desarrollo inicial y pruebas, puedes usar reglas permisivas (¡ no usar en producción! ):
+    
     > {
       "rules": {
         ".read": "true",
