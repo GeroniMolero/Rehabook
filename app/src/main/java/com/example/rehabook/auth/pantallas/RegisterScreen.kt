@@ -20,6 +20,10 @@ import com.google.firebase.database.DatabaseReference
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import android.util.Log
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 
 @Composable
 fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navController: NavController) {
@@ -146,8 +150,15 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                         Toast.makeText(context, "Usuario autenticado nulo después del registro", Toast.LENGTH_SHORT).show()
                                     }
                                 } else {
+                                    val errorMessage = when (authTask.exception){
+                                        is FirebaseAuthUserCollisionException -> "El correo ya está en uso"
+                                        is FirebaseAuthWeakPasswordException -> "La contraseña es demasiado debil"
+                                        is FirebaseAuthInvalidCredentialsException -> "Formato de correo no válido"
+                                        is FirebaseAuthInvalidUserException -> "Este usuario no existe o ha sido deshabilitado"
+                                        else -> "Error al registrarse. Por favor, inténtalo de nuevo"
+                                    }
                                     Log.e("RehabookRegister", "ERROR en autenticación: ${authTask.exception?.message}", authTask.exception) // Log 8
-                                    Toast.makeText(context, "Error al registrarse: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
                                 }
                             }
                     }
