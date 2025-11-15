@@ -23,6 +23,7 @@ import android.util.Log
 
 @Composable
 fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navController: NavController) {
+    Log.d("RehabookInit","RegisterScreen está siendo compuesta.")
     val context = LocalContext.current
 
     var name by rememberSaveable { mutableStateOf("") }
@@ -124,7 +125,7 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                             .addOnSuccessListener {
                                                 Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
                                                 Log.d("RehabookRegister", "Datos de usuario guardados exitosamente en RTDB.") // Log 5
-                                                navController.navigate(Screen.Home.route) {
+                                                navController.navigate(Screen.Login.route) {
                                                     popUpTo(Screen.Register.route) { inclusive = true }
                                                 }
                                             }
@@ -134,10 +135,10 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                                 auth.currentUser?.delete()
                                             }
                                             .addOnCompleteListener { task ->
-                                                if (task.isSuccessful) {
-                                                    Log.d("RehabookRegister", "Log 7 (COMPLETER): La tarea setValue se completó con ÉXITO. Datos guardados: $nuevoUsuario")
-                                                } else {
-                                                    Log.e("RehabookRegister", "Log 7 (COMPLETER): La tarea setValue falló. Excepción: ${task.exception?.message}", task.exception)
+                                                if(task.isSuccessful){
+                                                    Log.d("RehabookRegister", "Log7 (COMPLETER): La tarea setValue se completó con ÉXITO. Datos guardados: $nuevoUsuario")
+                                                }else{
+                                                    Log.d("RehabookRegister", "Log7 (COMPLETER): La tarea setValue falló. Excepción: ${task.exception?.message}",task.exception)
                                                 }
                                             }
                                     } ?: run {
@@ -149,7 +150,6 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                     Toast.makeText(context, "Error al registrarse: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
-                        // --- FIN DE CORRECCIONES ---
                     }
                 }
             },
