@@ -14,7 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.rehabook.Screen
-import com.example.rehabook.models.usuario
+import com.example.rehabook.models.Usuario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -116,7 +116,7 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                     val currentUser = auth.currentUser
                                     currentUser?.let { user ->
                                         val uid = user.uid
-                                        val nuevoUsuario = usuario(
+                                        val nuevoUsuario = Usuario(
                                             nombre = name,
                                             email = email,
                                             telefono = phone,
@@ -125,7 +125,7 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                                         Log.d("RehabookRegister", "Intentando guardar datos en RTDB para UID: $uid") // Log 3
                                         Log.d("RehabookRegister", "Datos a guardar: $nuevoUsuario") // Log 4
                                         
-                                        database.child("usuarios").child(uid).setValue(nuevoUsuario)
+                                        database.child("usuario").child(uid).setValue(nuevoUsuario)
                                             .addOnSuccessListener {
                                                 Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
                                                 Log.d("RehabookRegister", "Datos de usuario guardados exitosamente en RTDB.") // Log 5
