@@ -5,9 +5,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.rehabook.Screen
-import com.example.rehabook.auth.pantallas.HomeScreen
-import com.example.rehabook.auth.pantallas.LoginScreen
-import com.example.rehabook.auth.pantallas.RegisterScreen
+import com.example.rehabook.pantallas.auth.HomeScreen
+import com.example.rehabook.pantallas.auth.LoginScreen
+import com.example.rehabook.pantallas.auth.RegisterScreen
+import com.example.rehabook.pantallas.usuario.CitasFormScreen
+import com.example.rehabook.pantallas.usuario.CitasListScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 
@@ -28,6 +30,12 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
         }
         composable(Screen.Home.route) {
             HomeScreen(auth, navController)
+        }
+        composable(Screen.CitasList.route){
+            CitasListScreen(auth, database, navController)
+        }
+        composable(Screen.CitasForm.route){
+            CitasFormScreen(auth, database, navController)
         }
     }
 }

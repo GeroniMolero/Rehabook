@@ -1,4 +1,4 @@
-package com.example.rehabook.auth.pantallas
+package com.example.rehabook.pantallas.auth
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

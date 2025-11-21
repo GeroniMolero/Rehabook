@@ -1,4 +1,4 @@
-package com.example.rehabook.auth.pantallas
+package com.example.rehabook.pantallas.auth
 
 import android.util.Patterns
 import android.widget.Toast
