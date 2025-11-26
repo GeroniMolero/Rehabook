@@ -1,9 +1,11 @@
 package com.example.rehabook.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.rehabook.Screen
 import com.example.rehabook.pantallas.auth.HomeScreen
 import com.example.rehabook.pantallas.auth.LoginScreen
@@ -22,22 +24,34 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
         else Screen.Login.route
 
     NavHost(navController = navController, startDestination = startDestination) {
+
         composable(Screen.Login.route) {
             LoginScreen(auth, navController)
         }
+
         composable(Screen.Register.route) {
             RegisterScreen(auth, database, navController)
         }
+
         composable(Screen.Home.route) {
             HomeScreen(auth, navController)
         }
-        composable(Screen.CitasList.route){
+
+        composable(Screen.CitasList.route) {
             CitasListScreen(auth, database, navController)
         }
-        composable(Screen.CitasForm.route){
+
+        composable(
+            route = Screen.CitasForm.route + "?id={id}",
+            arguments = listOf(
+                navArgument("id") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
             CitasFormScreen(auth, database, navController)
         }
     }
 }
-
-
