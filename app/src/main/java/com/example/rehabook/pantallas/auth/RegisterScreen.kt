@@ -36,6 +36,8 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var dni by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
+    var confirmPasswordVisible by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -88,11 +90,25 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
             }
         )
 
+        TextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it },
+            label = { Text("Confirmar Contraseña") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            trailingIcon = {
+                TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                    Text(if (confirmPasswordVisible) "Ocultar" else "Mostrar")
+                }
+            }
+        )
+
         Button(
             onClick = {
                 // Validaciones
                 when {
-                    name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || dni.isEmpty() -> {
+                    name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || dni.isEmpty() || confirmPassword.isEmpty()-> {
                         Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
                     }
                     !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
@@ -100,6 +116,9 @@ fun RegisterScreen(auth: FirebaseAuth, database: DatabaseReference, navControlle
                     }
                     password.length < 6 -> {
                         Toast.makeText(context, "Contraseña mínima 6 caracteres", Toast.LENGTH_SHORT).show()
+                    }
+                    password != confirmPassword -> {
+                        Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
                     }
                     phone.length != 9 -> {
                         Toast.makeText(context, "El telefono debe tener 9 digitos",Toast.LENGTH_SHORT).show()
