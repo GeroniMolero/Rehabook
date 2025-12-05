@@ -14,6 +14,8 @@ import com.example.rehabook.pantallas.usuario.CitasFormScreen
 import com.example.rehabook.pantallas.usuario.CitasListScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
+import com.example.rehabook.pantallas.usuario.ChatListScreen
+import com.example.rehabook.pantallas.usuario.ChatScreen
 
 @Composable
 fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
@@ -52,6 +54,18 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
             )
         ) {
             CitasFormScreen(auth, database, navController)
+        }
+
+        composable(Screen.ChatList.route) {
+            ChatListScreen(auth, database, navController)
+        }
+
+        composable(
+            route = Screen.Chat.route,
+            arguments = listOf(navArgument("otherUserId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val otherUserId = backStackEntry.arguments?.getString("otherUserId") ?: ""
+            ChatScreen(auth, database, navController, otherUserId)
         }
     }
 }
