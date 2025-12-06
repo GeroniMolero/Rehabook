@@ -17,6 +17,7 @@ import com.example.rehabook.Screen
 import com.example.rehabook.models.Usuario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.example.rehabook.utils.ChatManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,6 +118,16 @@ fun ChatListScreen(
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(text = usuario.nombre, style = MaterialTheme.typography.titleMedium)
                             Text(text = "Email: ${usuario.email}")
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = {
+                                    Log.d(TAG, "Vaciar chat: $chatId")
+                                    // Vaciar el chat eliminando los mensajes
+                                    database.child("chats").child(chatId).child("mensajes").removeValue()
+                                    Log.d(TAG, "Mensajes del chat $chatId eliminados.")
+                                }) {
+                                    Text("Vaciar chat", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
                         }
                     }
                 }
