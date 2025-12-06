@@ -42,7 +42,6 @@ Permite registrar usuarios, iniciar sesión y cerrar sesión, guardar y mostrar 
             },
             "chats": {
               "$chatId": {
-                // Permite lectura/escritura si el usuario autenticado es uno de los participantes del chat
                 ".read": "auth != null && (data.child('participant1').val() == auth.uid || data.child('participant2').val() == auth.uid)",
                 ".write": "auth != null && (data.child('participant1').val() == auth.uid || data.child('participant2').val() == auth.uid)"
               }
