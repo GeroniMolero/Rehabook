@@ -24,16 +24,14 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatScreen(
     auth: FirebaseAuth,
-    database: DatabaseReference, // <-- Recibe la referencia como parámetro
+    database: DatabaseReference,
     navController: NavController,
-    otherUserId: String
+    otherUserId: String // UID del otro participante (admin o usuario)
 ) {
     val currentUser = auth.currentUser
     val currentUserId = currentUser?.uid ?: return
 
-    // NO se inicializa aquí, se usa la que llega por parámetro
-    // val database = Firebase.database(...).reference  <-- ¡ELIMINAR ESTA LÍNEA!
-
+    // Genera un ID de chat único y consistente
     val chatId = listOf(currentUserId, otherUserId).sorted().joinToString("_")
     val chatRef = database.child("chats").child(chatId)
 
@@ -44,6 +42,22 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
+    // --- ESTADO PARA EL ROL DEL USUARIO ---
+    var rolUsuario by remember { mutableStateOf(2) } // Por defecto, usuario normal
+
+    // --- EFECTO PARA OBTENER EL ROL DEL USUARIO ---
+    LaunchedEffect(currentUserId) {
+        database.child("usuario").child(currentUserId).get()
+            .addOnSuccessListener { snap ->
+                rolUsuario = snap.child("rol").getValue(Int::class.java) ?: 2
+                Log.d("ChatScreen", "Rol del usuario en ChatScreen: $rolUsuario")
+            }
+            .addOnFailureListener { e ->
+                Log.e("ChatScreen", "Error obteniendo rol del usuario", e)
+            }
+    }
+
+    // Efecto para escuchar nuevos mensajes en tiempo real
     LaunchedEffect(chatId) {
         Log.d("ChatScreen", "Configurando listener para chatId: $chatId")
         val mensajesRef = chatRef.child("mensajes")
@@ -53,6 +67,7 @@ fun ChatScreen(
                 mensaje?.let {
                     Log.d("ChatScreen", "Nuevo mensaje recibido: ${it.texto}")
                     mensajes = mensajes + it
+                    // Auto-scroll al final cuando llega un nuevo mensaje
                     coroutineScope.launch {
                         delay(100)
                         listState.animateScrollToItem(mensajes.size - 1)
@@ -85,6 +100,7 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Lista de mensajes
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
@@ -112,6 +128,7 @@ fun ChatScreen(
                 }
             }
 
+            // Campo de texto y botón de envío
             Row(
                 modifier = Modifier.padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -125,7 +142,10 @@ fun ChatScreen(
                 Spacer(Modifier.width(8.dp))
                 IconButton(onClick = {
                     if (messageText.isNotBlank()) {
+                        // 1. Generar una clave única para el nuevo mensaje
                         val mensajeKey = chatRef.child("mensajes").push().key
+
+                        // 2. Crear el objeto Mensaje
                         val nuevoMensaje = Mensaje(
                             id = mensajeKey ?: "",
                             remitenteUid = currentUserId,
@@ -133,8 +153,10 @@ fun ChatScreen(
                             timestamp = System.currentTimeMillis()
                         )
 
+                        // 3. Primero verificar si el chat existe
                         chatRef.get().addOnSuccessListener { snapshot ->
                             if (snapshot.exists()) {
+                                // El chat existe, solo añadir el mensaje
                                 chatRef.child("mensajes").child(mensajeKey!!).setValue(nuevoMensaje)
                                     .addOnSuccessListener {
                                         Log.d("ChatScreen", "Mensaje enviado con éxito.")
@@ -144,6 +166,7 @@ fun ChatScreen(
                                         Log.e("ChatScreen", "Error al enviar mensaje", e)
                                     }
                             } else {
+                                // El chat no existe, crearlo con los participantes y el primer mensaje
                                 val chatData = mapOf<String, Any>(
                                     "participantes/$currentUserId" to true,
                                     "participantes/$otherUserId" to true,
