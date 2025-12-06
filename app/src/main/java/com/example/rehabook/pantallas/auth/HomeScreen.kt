@@ -2,7 +2,11 @@ package com.example.rehabook.pantallas.auth
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Chat
@@ -10,13 +14,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.rehabook.Screen
 import com.example.rehabook.utils.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.example.rehabook.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +60,7 @@ fun HomeScreen(
                     Log.e(TAG, "Error al obtener rol del usuario para UID: $uid", e)
                 }
 
-            // 2. Si el usuario es normal, buscar el UID del administrador
+            // Si el usuario es normal, buscar el UID del administrador
             if (rolUsuario == 2) {
                 Log.d(TAG, "Usuario es rol 2, buscando administrador...")
                 cargandoAdmin = true
@@ -114,52 +122,76 @@ fun HomeScreen(
                         }
                     },
                     icon = { Icon(Icons.Default.Chat, contentDescription = "Chat") },
-                    label = { Text("Soporte") }
+                    label = { Text("Contacto") }
                 )
             }
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Bienvenido, ${user?.email ?: "Usuario"}",
-                style = MaterialTheme.typography.titleMedium
+            Image(
+                painter = painterResource(id = R.drawable.fondohome),
+                contentDescription = "Fondo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
-
-            Spacer(Modifier.height(32.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Mantener sesión iniciada")
-                Spacer(Modifier.width(8.dp))
-
-                Switch(
-                    checked = keepLoggedIn.value,
-                    onCheckedChange = {
-                        keepLoggedIn.value = it
-                        SessionManager.setKeepLoggedIn(context, it)
-                    }
-                )
-            }
-
-            Spacer(Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    SessionManager.setKeepLoggedIn(context, false)
-                    auth.signOut()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+                    .align(Alignment.Center),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Cerrar sesión")
+                Column(
+                    verticalArrangement = Arrangement.Top,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .background(
+                            color = Color.Black.copy(alpha = 0.6f),
+                            shape = MaterialTheme.shapes.medium
+                        ).padding(16.dp)
+                ) {
+                    Text(
+                        text = "Bienvenido, ${user?.email ?: "Usuario"}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+
+                    Spacer(Modifier.height(32.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Mantener sesión iniciada", color = Color.White)
+                        Spacer(Modifier.width(8.dp))
+
+                        Switch(
+                            checked = keepLoggedIn.value,
+                            onCheckedChange = {
+                                keepLoggedIn.value = it
+                                SessionManager.setKeepLoggedIn(context, it)
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // El botón de cerrar sesión en la parte inferior
+                Button(
+                    onClick = {
+                        SessionManager.setKeepLoggedIn(context, false)
+                        auth.signOut()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cerrar sesión")
+                }
             }
         }
     }

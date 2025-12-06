@@ -1,6 +1,7 @@
 package com.example.rehabook.pantallas.usuario
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.rehabook.Screen
@@ -110,7 +115,7 @@ fun ChatListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chats de soporte") },
+                title = { Text("Chats de tu consulta") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
@@ -130,7 +135,7 @@ fun ChatListScreen(
     ) { padding ->
         Column(Modifier.padding(padding)) {
 
-            // ---- Buscador ----
+            //Buscador
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -140,7 +145,7 @@ fun ChatListScreen(
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             )
 
-            // ---- Selector de orden ----
+            //Selector de orden
             Row(
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
                 horizontalArrangement = Arrangement.End
@@ -187,7 +192,7 @@ fun ChatListScreen(
                 }
             }
 
-            // ---- Lista de chats ----
+            //Lista de chats
             if (filteredChats.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No hay chats activos.")
@@ -207,7 +212,6 @@ fun ChatListScreen(
                             else MaterialTheme.colorScheme.surface
 
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = cardColor),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
@@ -218,29 +222,48 @@ fun ChatListScreen(
                                         )
                                     }
                                 }
-                                .padding(vertical = 4.dp)
+                                .padding(vertical = 8.dp, horizontal = 16.dp) // Mejorar espaciado horizontal
+                                .shadow(4.dp, shape = MaterialTheme.shapes.medium) // Agregar sombra para resaltar la tarjeta
+                                .clip(MaterialTheme.shapes.medium) // Bordes redondeados
                         ) {
-                            Column(Modifier.padding(16.dp)) {
-
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp) // Espaciado consistente entre los elementos
+                            ) {
+                                // Nombre del usuario: Más grande y en negrita
                                 Text(
                                     text = chat.usuario.nombre,
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold, // Negrita
+                                        color = MaterialTheme.colorScheme.primary // Color destacado
+                                    )
                                 )
 
+                                // Email: Más pequeño y con color gris
                                 Text(
                                     text = "Email: ${chat.usuario.email}",
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant // Gris más suave
+                                    )
                                 )
 
+                                // Último mensaje: Condicional si existe
                                 if (chat.lastTimestamp != null) {
                                     Text(
                                         "Último mensaje: ${formatTimestamp(chat.lastTimestamp!!)}",
-                                        style = MaterialTheme.typography.bodySmall
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant // Gris más suave
+                                        )
                                     )
                                 }
 
+                                Spacer(Modifier.height(8.dp)) // Espaciado entre los elementos
+
+                                // Botón de "Vaciar chat"
                                 Row(
-                                    Modifier.fillMaxWidth(),
+                                    modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
                                 ) {
                                     TextButton(
@@ -249,7 +272,7 @@ fun ChatListScreen(
                                             showDialog = true
                                         },
                                         colors = ButtonDefaults.textButtonColors(
-                                            contentColor = MaterialTheme.colorScheme.error
+                                            contentColor = MaterialTheme.colorScheme.error // Color rojo para indicar acción de eliminación
                                         )
                                     ) {
                                         Icon(Icons.Default.Delete, contentDescription = "Vaciar")
@@ -259,6 +282,7 @@ fun ChatListScreen(
                                 }
                             }
                         }
+
                     }
                 }
             }
