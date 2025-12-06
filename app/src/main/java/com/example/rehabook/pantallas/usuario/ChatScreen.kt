@@ -124,11 +124,20 @@ fun ChatScreen(
                                 containerColor = if (isFromMe) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                             )
                         ) {
-                            Text(
-                                text = mensaje.texto,
-                                modifier = Modifier.padding(12.dp)
-                            )
+                            Column(modifier = Modifier.padding(12.dp)) {
+
+                                Text(text = mensaje.texto)
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = formatTimestamp(mensaje.timestamp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
+
                     }
                 }
             }

@@ -1,13 +1,11 @@
 package com.example.rehabook.pantallas.usuario
 
 import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
@@ -15,15 +13,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.rehabook.Screen
+import com.example.rehabook.models.ChatPreview
 import com.example.rehabook.models.Usuario
+import com.example.rehabook.utils.ChatManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
-import com.example.rehabook.utils.ChatManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,68 +30,84 @@ fun ChatListScreen(
     navController: NavController
 ) {
     val adminUid = auth.currentUser?.uid ?: return
-    var chats by remember { mutableStateOf(listOf<Pair<String, Usuario>>()) }
-    val tag = "ChatListDebug"
+
+    var chats by remember { mutableStateOf(listOf<ChatPreview>()) }
 
     var showDialog by remember { mutableStateOf(false) }
     var selectedChatId by remember { mutableStateOf<String?>(null) }
 
-    // Crear una instancia de ChatManager
+    var sortOption by remember { mutableStateOf("recientes") }
+
     val chatManager = remember { ChatManager(database) }
 
+    val TAG = "ChatListScreen"
+
+    // ---- Escuchar todos los chats ----
     LaunchedEffect(adminUid) {
-        Log.d(tag, "LaunchedEffect en ChatListScreen. Configurando listener de chats para admin: $adminUid")
         database.child("chats").addChildEventListener(object : ChildEventListener {
+
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 val chatId = snapshot.key ?: return
-                Log.d(tag, "Nuevo chat detectado: $chatId")
-                // Extrae el UID del otro participante
-                val otherUserId = chatId.split("_").find { it != adminUid }
-                Log.d(tag, "ChatId: $chatId, AdminUid: $adminUid, OtherUserId: $otherUserId")
+                val participants = chatId.split("_")
+                val otherUserId = participants.find { it != adminUid } ?: return
 
-                if (otherUserId != null) {
-                    // Busca los datos de ese usuario
-                    database.child("usuario").child(otherUserId).get()
-                        .addOnSuccessListener { userSnap ->
-                            val usuario = userSnap.getValue(Usuario::class.java)
-                            if (usuario != null) {
-                                Log.d(tag, "Usuario encontrado para chat $chatId: ${usuario.nombre}")
-                                // Evita duplicados
-                                if (chats.none { it.first == chatId }) {
-                                    chats = chats + Pair(chatId, usuario)
-                                    Log.d(tag, "Chat añadido a la lista. Total chats: ${chats.size}")
-                                } else {
-                                    Log.w(tag, "Chat $chatId ya existía en la lista.")
-                                }
-                            } else {
-                                Log.w(tag, "No se pudo deserializar el usuario para UID: $otherUserId")
+                // Obtener datos del usuario
+                database.child("usuario").child(otherUserId).get()
+                    .addOnSuccessListener { userSnap ->
+                        val usuario = userSnap.getValue(Usuario::class.java) ?: return@addOnSuccessListener
+
+                        // Evitar duplicados
+                        if (chats.any { it.chatId == chatId }) return@addOnSuccessListener
+
+                        // Crear entrada inicial
+                        chats = chats + ChatPreview(
+                            chatId = chatId,
+                            usuario = usuario,
+                            lastTimestamp = null,
+                            lastReadAdmin = null
+                        )
+
+                        // Escuchar últimos mensajes
+                        escucharUltimoMensaje(database, chatId) { timestamp ->
+                            chats = chats.map {
+                                if (it.chatId == chatId) it.copy(lastTimestamp = timestamp)
+                                else it
                             }
                         }
-                        .addOnFailureListener { e ->
-                            Log.e(tag, "Error al obtener datos del usuario $otherUserId", e)
+
+                        // Escuchar lastRead_admin
+                        escucharUltimaLectura(database, chatId) { lastRead ->
+                            chats = chats.map {
+                                if (it.chatId == chatId) it.copy(lastReadAdmin = lastRead)
+                                else it
+                            }
                         }
-                } else {
-                    Log.w(tag, "No se pudo extraer otherUserId de chatId: $chatId")
-                }
+                    }
             }
 
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
+
             override fun onChildRemoved(snapshot: DataSnapshot) {
                 val chatId = snapshot.key ?: return
-                Log.d(tag, "Chat eliminado: $chatId")
-                chats = chats.filter { it.first != chatId }
+                chats = chats.filter { it.chatId != chatId }
             }
+
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
-            override fun onCancelled(error: DatabaseError) {
-                Log.e(tag, "Error escuchando chats: ${error.message}", error.toException())
-            }
+            override fun onCancelled(error: DatabaseError) {}
         })
+    }
+
+    // ---- Ordenar Chats ----
+    val sortedChats = when (sortOption) {
+        "recientes" -> chats.sortedByDescending { it.lastTimestamp ?: 0L }
+        "antiguos" -> chats.sortedBy { it.lastTimestamp ?: 0L }
+        else -> chats
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chats de Soporte") },
+                title = { Text("Chats de soporte") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
@@ -112,62 +125,125 @@ fun ChatListScreen(
             )
         }
     ) { padding ->
-        if (chats.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No hay chats activos.", style = MaterialTheme.typography.bodyMedium)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.padding(padding),
-                contentPadding = PaddingValues(8.dp)
+
+        Column(Modifier.padding(padding)) {
+
+            // ---- Selector de orden ----
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                horizontalArrangement = Arrangement.End
             ) {
-                items(chats) { (chatId, usuario) ->
-                    val otherUserId = chatId.split("_").find { it != adminUid }
+                var expanded by remember { mutableStateOf(false) }
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (otherUserId != null) {
-                                    navController.navigate(Screen.Chat.route.replace("{otherUserId}", otherUserId))
-                                }
+                Box {
+                    OutlinedButton(onClick = { expanded = true }) {
+                        Text(
+                            when (sortOption) {
+                                "recientes" -> "Más recientes"
+                                "antiguos" -> "Más antiguos"
+                                else -> "Sin ordenar"
                             }
-                            .padding(vertical = 8.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = usuario.nombre,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                        DropdownMenuItem(
+                            text = { Text("Más recientes") },
+                            onClick = {
+                                sortOption = "recientes"
+                                expanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Más antiguos") },
+                            onClick = {
+                                sortOption = "antiguos"
+                                expanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sin ordenar") },
+                            onClick = {
+                                sortOption = "normal"
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
 
-                            Text(
-                                text = "Email: ${usuario.email}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+            // ---- Lista de chats ----
+            if (sortedChats.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No hay chats activos.")
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(sortedChats) { chat ->
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                        val unread = chat.lastTimestamp != null &&
+                                (chat.lastReadAdmin == null || chat.lastTimestamp!! > chat.lastReadAdmin!!)
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                TextButton(
-                                    onClick = {
-                                        // Mostrar diálogo de confirmación antes de vaciar el chat
-                                        selectedChatId = chatId
-                                        showDialog = true
-                                    },
-                                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Delete,
-                                        contentDescription = "Vaciar chat",
-                                        modifier = Modifier.size(20.dp)
+                        val cardColor =
+                            if (unread) MaterialTheme.colorScheme.secondaryContainer
+                            else MaterialTheme.colorScheme.surface
+
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = cardColor),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val otherUserId = chat.chatId.split("_").find { it != adminUid }
+                                    if (otherUserId != null) {
+                                        navController.navigate(
+                                            Screen.Chat.route.replace("{otherUserId}", otherUserId)
+                                        )
+                                    }
+                                }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+
+                                Text(
+                                    text = chat.usuario.nombre,
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+
+                                Text(
+                                    text = "Email: ${chat.usuario.email}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+
+                                if (chat.lastTimestamp != null) {
+                                    Text(
+                                        "Último mensaje: ${formatTimestamp(chat.lastTimestamp!!)}",
+                                        style = MaterialTheme.typography.bodySmall
                                     )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Vaciar chat", style = MaterialTheme.typography.bodyMedium)
+                                }
+
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(
+                                        onClick = {
+                                            selectedChatId = chat.chatId
+                                            showDialog = true
+                                        },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = MaterialTheme.colorScheme.error
+                                        )
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Vaciar")
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Vaciar chat")
+                                    }
                                 }
                             }
                         }
@@ -176,6 +252,7 @@ fun ChatListScreen(
             }
         }
 
+        // ---- DIÁLOGO DE CONFIRMACIÓN ----
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
@@ -183,9 +260,7 @@ fun ChatListScreen(
                 text = { Text("¿Estás seguro de que deseas vaciar este chat?") },
                 confirmButton = {
                     TextButton(onClick = {
-                        if (selectedChatId != null) {
-                            chatManager.vaciarChat(selectedChatId!!)
-                        }
+                        selectedChatId?.let { chatManager.vaciarChat(it) }
                         showDialog = false
                     }) {
                         Text("Sí")
@@ -199,4 +274,54 @@ fun ChatListScreen(
             )
         }
     }
+}
+
+
+/* ---------------------------------------------------------
+   FUNCIONES AUXILIARES
+--------------------------------------------------------- */
+
+// Escucha el último timestamp del chat
+fun escucharUltimoMensaje(
+    database: DatabaseReference,
+    chatId: String,
+    onLastTimestamp: (Long?) -> Unit
+) {
+    database.child("chats").child(chatId).child("mensajes")
+        .addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                var last: Long? = null
+                snapshot.children.forEach { msg ->
+                    val ts = msg.child("timestamp").getValue(Long::class.java)
+                    if (ts != null && (last == null || ts > last!!)) {
+                        last = ts
+                    }
+                }
+                onLastTimestamp(last)
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
+}
+
+// Escucha cuándo el admin leyó el chat
+fun escucharUltimaLectura(
+    database: DatabaseReference,
+    chatId: String,
+    onLastRead: (Long?) -> Unit
+) {
+    database.child("chats").child(chatId).child("lastRead_admin")
+        .addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                onLastRead(snapshot.getValue(Long::class.java))
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
+}
+
+// Formato fecha
+fun formatTimestamp(timestamp: Long): String {
+    val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm")
+    return sdf.format(java.util.Date(timestamp))
 }
