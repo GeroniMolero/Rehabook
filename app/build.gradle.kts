@@ -69,6 +69,7 @@ dependencies {
     // Firebase Auth y Realtime Database
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-database")
+    implementation(libs.androidx.compose.foundation)
 
     // Testing
     testImplementation(libs.junit)
