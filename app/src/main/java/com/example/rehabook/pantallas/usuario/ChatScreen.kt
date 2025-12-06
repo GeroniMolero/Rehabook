@@ -107,7 +107,7 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chat con Soporte") },
+                title = { Text("Chat con ${if (rolUsuario == 1) "Usuario" else "Soporte"}") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")

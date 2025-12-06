@@ -35,7 +35,7 @@ fun LoginScreen(auth: FirebaseAuth, navController: NavController) {
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.pajaroestesi),
+            painter = painterResource(id = R.drawable.logorehabook),
             contentDescription = "logo",
             modifier = Modifier.padding(bottom = 128.dp),
             contentScale = ContentScale.Fit
