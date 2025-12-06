@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.rehabook.Screen
 import com.example.rehabook.models.Mensaje
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
@@ -85,6 +87,15 @@ fun ChatScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    }) {
+                        Icon(Icons.Default.Home, contentDescription = "Home")
                     }
                 }
             )

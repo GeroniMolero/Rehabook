@@ -8,7 +8,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -92,13 +94,21 @@ fun ChatListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chats de Soporte", color = Color.White) },
+                title = { Text("Chats de Soporte") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
+                actions = {
+                    IconButton(onClick = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    }) {
+                        Icon(Icons.Default.Home, contentDescription = "Home")
+                    }
+                }
             )
         }
     ) { padding ->
