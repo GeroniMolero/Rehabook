@@ -36,7 +36,8 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
         }
 
         composable(Screen.Home.route) {
-            HomeScreen(auth, navController)
+            // Se pasa la referencia 'database' a HomeScreen
+            HomeScreen(auth, database, navController)
         }
 
         composable(Screen.CitasList.route) {

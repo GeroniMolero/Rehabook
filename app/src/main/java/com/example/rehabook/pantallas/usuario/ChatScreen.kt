@@ -24,31 +24,35 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatScreen(
     auth: FirebaseAuth,
-    database: DatabaseReference,
+    database: DatabaseReference, // <-- Recibe la referencia como parámetro
     navController: NavController,
-    otherUserId: String // UID del otro participante (admin o usuario)
+    otherUserId: String
 ) {
     val currentUser = auth.currentUser
     val currentUserId = currentUser?.uid ?: return
 
-    // Genera un ID de chat único y consistente
+    // NO se inicializa aquí, se usa la que llega por parámetro
+    // val database = Firebase.database(...).reference  <-- ¡ELIMINAR ESTA LÍNEA!
+
     val chatId = listOf(currentUserId, otherUserId).sorted().joinToString("_")
     val chatRef = database.child("chats").child(chatId)
+
+    Log.d("ChatScreen", "Iniciando chat con ID: $chatId entre $currentUserId y $otherUserId")
 
     var mensajes by remember { mutableStateOf(listOf<Mensaje>()) }
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Efecto para escuchar nuevos mensajes en tiempo real
     LaunchedEffect(chatId) {
+        Log.d("ChatScreen", "Configurando listener para chatId: $chatId")
         val mensajesRef = chatRef.child("mensajes")
         mensajesRef.addChildEventListener(object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 val mensaje = snapshot.getValue(Mensaje::class.java)
                 mensaje?.let {
+                    Log.d("ChatScreen", "Nuevo mensaje recibido: ${it.texto}")
                     mensajes = mensajes + it
-                    // Auto-scroll al final cuando llega un nuevo mensaje
                     coroutineScope.launch {
                         delay(100)
                         listState.animateScrollToItem(mensajes.size - 1)
@@ -81,7 +85,6 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Lista de mensajes
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
@@ -109,7 +112,6 @@ fun ChatScreen(
                 }
             }
 
-            // Campo de texto y botón de envío
             Row(
                 modifier = Modifier.padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -123,13 +125,7 @@ fun ChatScreen(
                 Spacer(Modifier.width(8.dp))
                 IconButton(onClick = {
                     if (messageText.isNotBlank()) {
-                        // --- INICIO DE LA LÓGICA ACTUALIZADA ---
-                        // Creamos una única actualización atómica para crear el chat y el mensaje
-
-                        // 1. Generar una clave única para el nuevo mensaje
                         val mensajeKey = chatRef.child("mensajes").push().key
-
-                        // 2. Crear el objeto Mensaje con todos los campos requeridos por las reglas
                         val nuevoMensaje = Mensaje(
                             id = mensajeKey ?: "",
                             remitenteUid = currentUserId,
@@ -137,23 +133,33 @@ fun ChatScreen(
                             timestamp = System.currentTimeMillis()
                         )
 
-                        val updates = mapOf<String, Any>(
-                            // Añadir a ambos participantes
-                            "participants/$currentUserId" to true,
-                            "participants/$otherUserId" to true,
-                            // Añadir el nuevo mensaje
-                            "mensajes/$mensajeKey" to nuevoMensaje.toMap()
-                        )
+                        chatRef.get().addOnSuccessListener { snapshot ->
+                            if (snapshot.exists()) {
+                                chatRef.child("mensajes").child(mensajeKey!!).setValue(nuevoMensaje)
+                                    .addOnSuccessListener {
+                                        Log.d("ChatScreen", "Mensaje enviado con éxito.")
+                                        messageText = ""
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.e("ChatScreen", "Error al enviar mensaje", e)
+                                    }
+                            } else {
+                                val chatData = mapOf<String, Any>(
+                                    "participantes/$currentUserId" to true,
+                                    "participantes/$otherUserId" to true,
+                                    "mensajes/$mensajeKey" to nuevoMensaje.toMap()
+                                )
 
-                        Log.d("ChatScreenSpy", "Intentando escribir en Firebase. ChatId: $chatId, Updates: $updates")
-                        chatRef.updateChildren(updates)
-                            .addOnSuccessListener {
-                                Log.d("ChatScreen", "Chat y mensaje creados/enviados con éxito.")
-                                messageText = "" // Limpiar el campo de texto
+                                chatRef.setValue(chatData)
+                                    .addOnSuccessListener {
+                                        Log.d("ChatScreen", "Chat y mensaje creados con éxito.")
+                                        messageText = ""
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Log.e("ChatScreen", "Error al crear chat y mensaje", e)
+                                    }
                             }
-                            .addOnFailureListener { e ->
-                                Log.e("ChatScreen", "Error al enviar mensaje", e)
-                            }
+                        }
                     }
                 }) {
                     Icon(Icons.Default.Send, contentDescription = "Enviar")
@@ -161,14 +167,4 @@ fun ChatScreen(
             }
         }
     }
-}
-
-// Función de extensión para convertir el data class a Map, útil para Firebase
-fun Mensaje.toMap(): Map<String, Any> {
-    return mapOf(
-        "id" to this.id,
-        "remitenteUid" to this.remitenteUid,
-        "texto" to this.texto,
-        "timestamp" to this.timestamp
-    )
 }

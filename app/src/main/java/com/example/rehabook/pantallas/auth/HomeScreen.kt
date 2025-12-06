@@ -1,5 +1,6 @@
 package com.example.rehabook.pantallas.auth
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -15,40 +16,57 @@ import androidx.navigation.NavController
 import com.example.rehabook.Screen
 import com.example.rehabook.utils.SessionManager
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.Firebase
 import com.google.firebase.database.*
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(auth: FirebaseAuth, navController: NavController) {
+fun HomeScreen(
+    auth: FirebaseAuth,
+    database: DatabaseReference, // <-- Recibe la referencia como parámetro
+    navController: NavController
+) {
     val context = LocalContext.current
     val user = auth.currentUser
-    val database = Firebase.database.reference
+    // NO se inicializa aquí, se usa la que llega por parámetro
+    // val database = Firebase.database(...).reference  <-- ¡ELIMINAR ESTA LÍNEA!
     val scope = rememberCoroutineScope()
 
     val keepLoggedIn = remember { mutableStateOf(SessionManager.getKeepLoggedIn(context)) }
 
     // --- ESTADOS PARA EL CHAT ---
-    var rolUsuario by remember { mutableStateOf(2) } // Por defecto, usuario normal
+    var rolUsuario by remember { mutableStateOf(2) }
     var adminUid by remember { mutableStateOf<String?>(null) }
+    var cargandoAdmin by remember { mutableStateOf(false) }
 
-    // --- EFECTO PARA OBTENER ROL Y ADMIN UID (CORREGIDO) ---
+    // --- EFECTO PARA OBTENER ROL Y ADMIN UID ---
     LaunchedEffect(user?.uid) {
         user?.uid?.let { uid ->
             // 1. Obtener el rol del usuario actual
             database.child("usuario").child(uid).get()
                 .addOnSuccessListener { snap ->
-                    // Leemos el rol como String para evitar problemas de tipo y lo convertimos a Int
-                    rolUsuario = snap.child("rol").getValue(String::class.java)?.toIntOrNull() ?: 2
+                    rolUsuario = snap.child("rol").getValue(Int::class.java) ?: 2
+                    Log.d("HomeScreen", "Rol del usuario: $rolUsuario")
                 }
 
             // 2. Si el usuario es normal, buscar el UID del administrador
             if (rolUsuario == 2) {
-                database.child("usuario").orderByChild("rol").equalTo("1").limitToFirst(1).get()
-                    .addOnSuccessListener { snap ->
+                cargandoAdmin = true
+                val adminUidTemporal = "7cT0g6mjOQN4kjHVrXmp2rO9VzE2"
 
-                        adminUid = snap.children.firstOrNull()?.key
+                database.child("usuario").child(adminUidTemporal).child("rol").get()
+                    .addOnSuccessListener { snapshot ->
+                        if (snapshot.getValue(Int::class.java) != 1) {
+                            adminUid = null
+                            Log.d("HomeScreen", "El UID proporcionado ya no es administrador")
+                        } else {
+                            adminUid = adminUidTemporal
+                            Log.d("HomeScreen", "UID del administrador encontrado: $adminUidTemporal")
+                        }
+                        cargandoAdmin = false
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("HomeScreen", "Error verificando administrador", e)
+                        cargandoAdmin = false
                     }
             }
         }
@@ -69,10 +87,15 @@ fun HomeScreen(auth: FirebaseAuth, navController: NavController) {
                         if (rolUsuario == 1) {
                             navController.navigate(Screen.ChatList.route)
                         } else {
-                            adminUid?.let { uid ->
-                                navController.navigate(Screen.Chat.route.replace("{otherUserId}", uid))
-                            } ?: run {
+                            if (cargandoAdmin) {
                                 Toast.makeText(context, "Buscando administrador...", Toast.LENGTH_SHORT).show()
+                            } else {
+                                adminUid?.let { uid ->
+                                    Log.d("HomeScreen", "Navegando al chat con UID: $uid")
+                                    navController.navigate(Screen.Chat.route.replace("{otherUserId}", uid))
+                                } ?: run {
+                                    Toast.makeText(context, "No se encontró administrador", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     },
