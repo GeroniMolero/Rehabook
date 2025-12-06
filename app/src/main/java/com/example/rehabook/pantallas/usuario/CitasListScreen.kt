@@ -22,9 +22,11 @@ import com.google.firebase.database.*
 @Composable
 fun CitasListScreen(auth: FirebaseAuth, database: DatabaseReference, navController: NavController) {
     val user = auth.currentUser
-    val rolUsuario = remember { mutableStateOf(2) } // por defecto usuario
-
+    val rolUsuario = remember { mutableStateOf(2) }
     var citas by remember { mutableStateOf(listOf<Cita>()) }
+
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedCitaId by remember { mutableStateOf<String?>(null) }
 
     // ---- Leer rol del usuario ----
     LaunchedEffect(user?.uid) {
@@ -147,14 +149,38 @@ fun CitasListScreen(auth: FirebaseAuth, database: DatabaseReference, navControll
                                 }) { Text("Editar") }
 
                                 TextButton(onClick = {
-                                    Log.d("CitasListScreen", "Eliminando cita ${cita.id}")
-                                    database.child("cita").child(cita.id).removeValue()
+                                    // Mostrar el diálogo de confirmación de eliminación
+                                    selectedCitaId = cita.id
+                                    showDialog = true
                                 }) { Text("Eliminar", color = MaterialTheme.colorScheme.error) }
                             }
                         }
                     }
                 }
             }
+        }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Confirmación") },
+                text = { Text("¿Estás seguro de que deseas eliminar esta cita?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (selectedCitaId != null) {
+                            database.child("cita").child(selectedCitaId!!).removeValue()
+                        }
+                        showDialog = false
+                    }) {
+                        Text("Sí")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("No")
+                    }
+                }
+            )
         }
     }
 }

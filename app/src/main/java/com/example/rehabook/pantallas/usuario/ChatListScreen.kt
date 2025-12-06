@@ -31,8 +31,11 @@ fun ChatListScreen(
     navController: NavController
 ) {
     val adminUid = auth.currentUser?.uid ?: return
-    var chats by remember { mutableStateOf(listOf<Pair<String, Usuario>>()) } // (chatId, usuario)
+    var chats by remember { mutableStateOf(listOf<Pair<String, Usuario>>()) }
     val tag = "ChatListDebug"
+
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedChatId by remember { mutableStateOf<String?>(null) }
 
     // Crear una instancia de ChatManager
     val chatManager = remember { ChatManager(database) }
@@ -115,7 +118,6 @@ fun ChatListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                Log.d(tag, "Chat clickeado. ChatId: $chatId, otherUserId: $otherUserId")
                                 if (otherUserId != null) {
                                     navController.navigate(Screen.Chat.route.replace("{otherUserId}", otherUserId))
                                 }
@@ -143,9 +145,9 @@ fun ChatListScreen(
                             ) {
                                 TextButton(
                                     onClick = {
-                                        Log.d(tag, "Vaciar chat: $chatId")
-                                        // Usamos ChatManager para vaciar el chat
-                                        chatManager.vaciarChat(chatId)
+                                        // Mostrar diálogo de confirmación antes de vaciar el chat
+                                        selectedChatId = chatId
+                                        showDialog = true
                                     },
                                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                                 ) {
@@ -162,6 +164,29 @@ fun ChatListScreen(
                     }
                 }
             }
+        }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Confirmación") },
+                text = { Text("¿Estás seguro de que deseas vaciar este chat?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (selectedChatId != null) {
+                            chatManager.vaciarChat(selectedChatId!!)
+                        }
+                        showDialog = false
+                    }) {
+                        Text("Sí")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("No")
+                    }
+                }
+            )
         }
     }
 }
