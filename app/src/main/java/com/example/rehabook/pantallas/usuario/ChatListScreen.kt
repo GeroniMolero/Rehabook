@@ -27,38 +27,54 @@ fun ChatListScreen(
 ) {
     val adminUid = auth.currentUser?.uid ?: return
     var chats by remember { mutableStateOf(listOf<Pair<String, Usuario>>()) } // (chatId, usuario)
+    val TAG = "ChatListDebug"
+
+    Log.d(TAG, "ChatListScreen compuesto. Admin UID: $adminUid")
 
     LaunchedEffect(adminUid) {
-        // Escucha los nodos de chat que involucren al administrador
+        Log.d(TAG, "LaunchedEffect en ChatListScreen. Configurando listener de chats para admin: $adminUid")
         database.child("chats").addChildEventListener(object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 val chatId = snapshot.key ?: return
+                Log.d(TAG, "Nuevo chat detectado: $chatId")
                 // Extrae el UID del otro participante
-                val otherUserId = chatId.split("_").find { it != adminUid } ?: return
+                val otherUserId = chatId.split("_").find { it != adminUid }
+                Log.d(TAG, "ChatId: $chatId, AdminUid: $adminUid, OtherUserId: $otherUserId")
 
-                // Busca los datos de ese usuario
-                database.child("usuario").child(otherUserId).get()
-                    .addOnSuccessListener { userSnap ->
-                        val usuario = userSnap.getValue(Usuario::class.java)
-                        if (usuario != null) {
-                            // Evita duplicados
-                            if (chats.none { it.first == chatId }) {
-                                chats = chats + Pair(chatId, usuario)
+                if (otherUserId != null) {
+                    // Busca los datos de ese usuario
+                    database.child("usuario").child(otherUserId).get()
+                        .addOnSuccessListener { userSnap ->
+                            val usuario = userSnap.getValue(Usuario::class.java)
+                            if (usuario != null) {
+                                Log.d(TAG, "Usuario encontrado para chat $chatId: ${usuario.nombre}")
+                                // Evita duplicados
+                                if (chats.none { it.first == chatId }) {
+                                    chats = chats + Pair(chatId, usuario)
+                                    Log.d(TAG, "Chat añadido a la lista. Total chats: ${chats.size}")
+                                } else {
+                                    Log.w(TAG, "Chat $chatId ya existía en la lista.")
+                                }
+                            } else {
+                                Log.w(TAG, "No se pudo deserializar el usuario para UID: $otherUserId")
                             }
                         }
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("ChatListScreen", "Error al obtener datos del usuario $otherUserId", e)
-                    }
+                        .addOnFailureListener { e ->
+                            Log.e(TAG, "Error al obtener datos del usuario $otherUserId", e)
+                        }
+                } else {
+                    Log.w(TAG, "No se pudo extraer otherUserId de chatId: $chatId")
+                }
             }
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onChildRemoved(snapshot: DataSnapshot) {
                 val chatId = snapshot.key ?: return
+                Log.d(TAG, "Chat eliminado: $chatId")
                 chats = chats.filter { it.first != chatId }
             }
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ChatListScreen", "Error escuchando chats: ${error.message}")
+                Log.e(TAG, "Error escuchando chats: ${error.message}", error.toException())
             }
         })
     }
@@ -85,14 +101,13 @@ fun ChatListScreen(
                 contentPadding = PaddingValues(8.dp)
             ) {
                 items(chats) { (chatId, usuario) ->
-                    // Obtenemos el UID del otro usuario directamente desde el chatId
                     val otherUserId = chatId.split("_").find { it != adminUid }
 
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                // Usamos el otherUserId que acabamos de calcular
+                                Log.d(TAG, "Chat clickeado. ChatId: $chatId, otherUserId: $otherUserId")
                                 if (otherUserId != null) {
                                     navController.navigate(Screen.Chat.route.replace("{otherUserId}", otherUserId))
                                 }

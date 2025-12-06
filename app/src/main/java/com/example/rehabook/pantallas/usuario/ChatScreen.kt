@@ -26,48 +26,43 @@ fun ChatScreen(
     auth: FirebaseAuth,
     database: DatabaseReference,
     navController: NavController,
-    otherUserId: String // UID del otro participante (admin o usuario)
+    otherUserId: String
 ) {
     val currentUser = auth.currentUser
     val currentUserId = currentUser?.uid ?: return
-
-    // Genera un ID de chat único y consistente
     val chatId = listOf(currentUserId, otherUserId).sorted().joinToString("_")
     val chatRef = database.child("chats").child(chatId)
+    val TAG = "ChatScreenDebug"
 
-    Log.d("ChatScreen", "Iniciando chat con ID: $chatId entre $currentUserId y $otherUserId")
+    Log.d(TAG, "ChatScreen compuesto. currentUserId: $currentUserId, otherUserId: $otherUserId, chatId: $chatId")
 
     var mensajes by remember { mutableStateOf(listOf<Mensaje>()) }
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    var rolUsuario by remember { mutableStateOf(2) }
 
-    // --- ESTADO PARA EL ROL DEL USUARIO ---
-    var rolUsuario by remember { mutableStateOf(2) } // Por defecto, usuario normal
-
-    // --- EFECTO PARA OBTENER EL ROL DEL USUARIO ---
     LaunchedEffect(currentUserId) {
+        Log.d(TAG, "LaunchedEffect para obtener rol. currentUserId: $currentUserId")
         database.child("usuario").child(currentUserId).get()
             .addOnSuccessListener { snap ->
                 rolUsuario = snap.child("rol").getValue(Int::class.java) ?: 2
-                Log.d("ChatScreen", "Rol del usuario en ChatScreen: $rolUsuario")
+                Log.d(TAG, "Rol del usuario obtenido en ChatScreen: $rolUsuario")
             }
             .addOnFailureListener { e ->
-                Log.e("ChatScreen", "Error obteniendo rol del usuario", e)
+                Log.e(TAG, "Error obteniendo rol del usuario en ChatScreen", e)
             }
     }
 
-    // Efecto para escuchar nuevos mensajes en tiempo real
     LaunchedEffect(chatId) {
-        Log.d("ChatScreen", "Configurando listener para chatId: $chatId")
+        Log.d(TAG, "LaunchedEffect para listener de mensajes. chatId: $chatId")
         val mensajesRef = chatRef.child("mensajes")
         mensajesRef.addChildEventListener(object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 val mensaje = snapshot.getValue(Mensaje::class.java)
                 mensaje?.let {
-                    Log.d("ChatScreen", "Nuevo mensaje recibido: ${it.texto}")
+                    Log.d(TAG, "Nuevo mensaje recibido: ${it.texto} de ${it.remitenteUid}")
                     mensajes = mensajes + it
-                    // Auto-scroll al final cuando llega un nuevo mensaje
                     coroutineScope.launch {
                         delay(100)
                         listState.animateScrollToItem(mensajes.size - 1)
@@ -78,7 +73,7 @@ fun ChatScreen(
             override fun onChildRemoved(snapshot: DataSnapshot) {}
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ChatScreen", "Error escuchando mensajes: ${error.message}")
+                Log.e(TAG, "Error escuchando mensajes: ${error.message}", error.toException())
             }
         })
     }
@@ -100,7 +95,6 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Lista de mensajes
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
@@ -128,7 +122,6 @@ fun ChatScreen(
                 }
             }
 
-            // Campo de texto y botón de envío
             Row(
                 modifier = Modifier.padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -140,49 +133,72 @@ fun ChatScreen(
                     placeholder = { Text("Escribe un mensaje...") }
                 )
                 Spacer(Modifier.width(8.dp))
+                // En ChatScreen.kt, modifica la sección de envío de mensajes:
+
                 IconButton(onClick = {
-                    if (messageText.isNotBlank()) {
-                        // 1. Generar una clave única para el nuevo mensaje
-                        val mensajeKey = chatRef.child("mensajes").push().key
+                    try {
+                        Log.d(TAG, "Botón de enviar pulsado. messageText: '$messageText'")
 
-                        // 2. Crear el objeto Mensaje
-                        val nuevoMensaje = Mensaje(
-                            id = mensajeKey ?: "",
-                            remitenteUid = currentUserId,
-                            texto = messageText.trim(),
-                            timestamp = System.currentTimeMillis()
-                        )
+                        if (messageText.isNotBlank()) {
+                            val mensajeKey = chatRef.child("mensajes").push().key ?: return@IconButton
+                            if (mensajeKey.contains('/') || mensajeKey.contains('.') || mensajeKey.contains('#') ||
+                                mensajeKey.contains('$') || mensajeKey.contains('[') || mensajeKey.contains(']')) {
+                                Log.e(TAG, "La clave del mensaje contiene caracteres no válidos: $mensajeKey")
+                                return@IconButton
+                            }
+                            val nuevoMensaje = Mensaje(
+                                id = mensajeKey,
+                                remitenteUid = currentUserId,
+                                texto = messageText.trim(),
+                                timestamp = System.currentTimeMillis()
+                            )
+                            Log.d(TAG, "Mensaje a enviar: $nuevoMensaje")
 
-                        // 3. Primero verificar si el chat existe
-                        chatRef.get().addOnSuccessListener { snapshot ->
-                            if (snapshot.exists()) {
-                                // El chat existe, solo añadir el mensaje
-                                chatRef.child("mensajes").child(mensajeKey!!).setValue(nuevoMensaje)
-                                    .addOnSuccessListener {
-                                        Log.d("ChatScreen", "Mensaje enviado con éxito.")
-                                        messageText = ""
-                                    }
-                                    .addOnFailureListener { e ->
-                                        Log.e("ChatScreen", "Error al enviar mensaje", e)
-                                    }
-                            } else {
-                                // El chat no existe, crearlo con los participantes y el primer mensaje
-                                val chatData = mapOf<String, Any>(
-                                    "participantes/$currentUserId" to true,
-                                    "participantes/$otherUserId" to true,
-                                    "mensajes/$mensajeKey" to nuevoMensaje.toMap()
-                                )
+                            // Verificar si el chat existe
+                            chatRef.get().addOnSuccessListener { snapshot ->
+                                Log.d(TAG, "Verificando si chat existe. exists: ${snapshot.exists()}")
+                                if (snapshot.exists()) {
+                                    Log.d(TAG, "Chat existe. Añadiendo mensaje.")
+                                    // El chat existe, solo añadir el mensaje
+                                    chatRef.child("mensajes").child(mensajeKey).setValue(nuevoMensaje)
+                                        .addOnSuccessListener {
+                                            Log.d(TAG, "Mensaje enviado con éxito.")
+                                            messageText = ""
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e(TAG, "Error al enviar mensaje", e)
+                                        }
+                                } else {
+                                    Log.d(TAG, "Chat no existe. Creando chat y primer mensaje.")
+                                    // El chat no existe, crearlo con los participantes y el primer mensaje
+                                    // CORRECCIÓN: Crear el HashMap de forma anidada para evitar caracteres especiales en las claves
+                                    val chatData = HashMap<String, Any>()
+                                    val participantesData = HashMap<String, Boolean>()
+                                    participantesData[currentUserId] = true
+                                    participantesData[otherUserId] = true
 
-                                chatRef.setValue(chatData)
-                                    .addOnSuccessListener {
-                                        Log.d("ChatScreen", "Chat y mensaje creados con éxito.")
-                                        messageText = ""
-                                    }
-                                    .addOnFailureListener { e ->
-                                        Log.e("ChatScreen", "Error al crear chat y mensaje", e)
-                                    }
+                                    val mensajesData = HashMap<String, Any>()
+                                    mensajesData[mensajeKey] = nuevoMensaje.toMap()
+
+                                    chatData["participantes"] = participantesData
+                                    chatData["mensajes"] = mensajesData
+
+                                    Log.d(TAG, "Datos del nuevo chat: $chatData")
+                                    chatRef.setValue(chatData)
+                                        .addOnSuccessListener {
+                                            Log.d(TAG, "Chat y mensaje creados con éxito.")
+                                            messageText = ""
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e(TAG, "Error al crear chat y mensaje", e)
+                                        }
+                                }
+                            }.addOnFailureListener { e ->
+                                Log.e(TAG, "Error al verificar si el chat existe", e)
                             }
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Excepción no controlada al enviar mensaje", e)
                     }
                 }) {
                     Icon(Icons.Default.Send, contentDescription = "Enviar")

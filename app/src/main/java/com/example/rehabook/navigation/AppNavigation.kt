@@ -1,5 +1,6 @@
 package com.example.rehabook.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -17,6 +18,8 @@ import com.google.firebase.database.DatabaseReference
 import com.example.rehabook.pantallas.usuario.ChatListScreen
 import com.example.rehabook.pantallas.usuario.ChatScreen
 
+val TAG = "AppNavigationDebug"
+
 @Composable
 fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
     val navController = rememberNavController()
@@ -24,6 +27,8 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
     val startDestination =
         if (auth.currentUser != null) Screen.Home.route
         else Screen.Login.route
+
+    Log.d(TAG, "AppNavigation inicializada. startDestination: $startDestination")
 
     NavHost(navController = navController, startDestination = startDestination) {
 
@@ -36,7 +41,6 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
         }
 
         composable(Screen.Home.route) {
-            // Se pasa la referencia 'database' a HomeScreen
             HomeScreen(auth, database, navController)
         }
 
@@ -58,6 +62,7 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
         }
 
         composable(Screen.ChatList.route) {
+            Log.d(TAG, "Navegando a ChatListScreen")
             ChatListScreen(auth, database, navController)
         }
 
@@ -66,6 +71,7 @@ fun AppNavigation(auth: FirebaseAuth, database: DatabaseReference) {
             arguments = listOf(navArgument("otherUserId") { type = NavType.StringType })
         ) { backStackEntry ->
             val otherUserId = backStackEntry.arguments?.getString("otherUserId") ?: ""
+            Log.d(TAG, "Navegando a ChatScreen con otherUserId: $otherUserId")
             ChatScreen(auth, database, navController, otherUserId)
         }
     }

@@ -7,6 +7,7 @@ data class Mensaje(
     var timestamp: Long = 0L
 ) {
     // Función para convertir a Map compatible con Firebase
+
     fun toMap(): Map<String, Any> {
         return mapOf(
             "id" to id,
