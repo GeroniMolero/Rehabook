@@ -32,14 +32,12 @@ fun ChatListScreen(
     val adminUid = auth.currentUser?.uid ?: return
 
     var chats by remember { mutableStateOf(listOf<ChatPreview>()) }
-
     var showDialog by remember { mutableStateOf(false) }
     var selectedChatId by remember { mutableStateOf<String?>(null) }
-
     var sortOption by remember { mutableStateOf("recientes") }
+    var searchQuery by remember { mutableStateOf("") } // Estado del buscador
 
     val chatManager = remember { ChatManager(database) }
-
     val TAG = "ChatListScreen"
 
     // ---- Escuchar todos los chats ----
@@ -86,22 +84,27 @@ fun ChatListScreen(
             }
 
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
-
             override fun onChildRemoved(snapshot: DataSnapshot) {
                 val chatId = snapshot.key ?: return
                 chats = chats.filter { it.chatId != chatId }
             }
-
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
             override fun onCancelled(error: DatabaseError) {}
         })
     }
 
-    // ---- Ordenar Chats ----
+    // ---- Ordenar chats ----
     val sortedChats = when (sortOption) {
         "recientes" -> chats.sortedByDescending { it.lastTimestamp ?: 0L }
         "antiguos" -> chats.sortedBy { it.lastTimestamp ?: 0L }
         else -> chats
+    }
+
+    // ---- Filtrar chats según buscador ----
+    val filteredChats = sortedChats.filter { chat ->
+        val query = searchQuery.lowercase()
+        chat.usuario.nombre.lowercase().contains(query) ||
+                chat.usuario.email.lowercase().contains(query)
     }
 
     Scaffold(
@@ -125,8 +128,17 @@ fun ChatListScreen(
             )
         }
     ) { padding ->
-
         Column(Modifier.padding(padding)) {
+
+            // ---- Buscador ----
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Buscar usuario") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
 
             // ---- Selector de orden ----
             Row(
@@ -176,7 +188,7 @@ fun ChatListScreen(
             }
 
             // ---- Lista de chats ----
-            if (sortedChats.isEmpty()) {
+            if (filteredChats.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No hay chats activos.")
                 }
@@ -185,7 +197,7 @@ fun ChatListScreen(
                     contentPadding = PaddingValues(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(sortedChats) { chat ->
+                    items(filteredChats) { chat ->
 
                         val unread = chat.lastTimestamp != null &&
                                 (chat.lastReadAdmin == null || chat.lastTimestamp!! > chat.lastReadAdmin!!)
@@ -299,7 +311,6 @@ fun escucharUltimoMensaje(
                 }
                 onLastTimestamp(last)
             }
-
             override fun onCancelled(error: DatabaseError) {}
         })
 }
@@ -315,7 +326,6 @@ fun escucharUltimaLectura(
             override fun onDataChange(snapshot: DataSnapshot) {
                 onLastRead(snapshot.getValue(Long::class.java))
             }
-
             override fun onCancelled(error: DatabaseError) {}
         })
 }
