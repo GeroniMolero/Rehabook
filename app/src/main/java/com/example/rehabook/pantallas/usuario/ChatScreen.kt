@@ -133,8 +133,6 @@ fun ChatScreen(
                     placeholder = { Text("Escribe un mensaje...") }
                 )
                 Spacer(Modifier.width(8.dp))
-                // En ChatScreen.kt, modifica la sección de envío de mensajes:
-
                 IconButton(onClick = {
                     try {
                         Log.d(TAG, "Botón de enviar pulsado. messageText: '$messageText'")
@@ -171,7 +169,6 @@ fun ChatScreen(
                                 } else {
                                     Log.d(TAG, "Chat no existe. Creando chat y primer mensaje.")
                                     // El chat no existe, crearlo con los participantes y el primer mensaje
-                                    // CORRECCIÓN: Crear el HashMap de forma anidada para evitar caracteres especiales en las claves
                                     val chatData = HashMap<String, Any>()
                                     val participantesData = HashMap<String, Boolean>()
                                     participantesData[currentUserId] = true

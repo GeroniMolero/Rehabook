@@ -85,7 +85,7 @@ fun LoginScreen(auth: FirebaseAuth, navController: NavController) {
                                     popUpTo(Screen.Login.route) { inclusive = true }
                                 }
                             } else {
-                                Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Los campos introducidos no son correctos", Toast.LENGTH_SHORT).show()
                             }
                         }
                 },
